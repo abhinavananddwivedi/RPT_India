@@ -92,6 +92,14 @@ data_RPT_summary_ind <- data_RPT_2 %>%
 plot_hist_RPT_agg <- ggplot(data_RPT_2, aes(x = RPT_agg)) +
   geom_histogram(bins = 50)
 
+# Power laws?
+# plot_RPT_agg_power <- plot_hist_RPT_agg +
+#   # Add a log-log scale to the x and y axis
+#   scale_x_log10(limits = c(0.1, 10), breaks = trans_breaks("log10", function(x) 10^x)) +
+#   scale_y_log10(limits = c(0.1, 100), breaks = trans_breaks("log10", function(x) 10^x)) +
+#   # Add a regression line
+#   geom_smooth(method = "lm", se = FALSE) +
+#   ggtitle("Power law distribution")
 
 # Median firm's RPT level with time
 year_breaks <- 2010:2020
