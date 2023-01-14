@@ -88,6 +88,11 @@ data_RPT_summary_ind <- data_RPT_2 %>%
   )
 
 
+# Aggregate RPT histogram
+plot_hist_RPT_agg <- ggplot(data_RPT_2, aes(x = RPT_agg)) +
+  geom_histogram(bins = 50)
+
+
 # Median firm's RPT level with time
 year_breaks <- 2010:2020
 
