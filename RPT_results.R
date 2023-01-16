@@ -26,9 +26,9 @@ data_RPT_2 <- data_RPT %>%
  #                  RP_LOANS+RP_BORROWINGS+RP_GUARGIV+RP_GUARTKN+RP_DOS+RP_INVESTEE)
 
 ## Without [?] double counting
-# Defining aggregate RPT = RPT sales+loans+DOS+investee to avoid double counting
+# Defining aggregate RPT = RPT sales+loans to avoid double counting
 data_RPT_2 <- data_RPT_2 %>%
-  dplyr::mutate('RPT_agg' = RP_SALES+RP_LOANS+RP_BORROWINGS+RP_DOS+RP_INVESTEE)
+  dplyr::mutate('RPT_agg' = RP_SALES+RP_LOANS)
 
 # Time series data summary
 data_RPT_summary_TS <- data_RPT_2 %>%
@@ -87,6 +87,36 @@ data_RPT_summary_ind <- data_RPT_2 %>%
             'kurt' = moments::kurtosis(RPT_agg, na.rm = T)
   )
 
+data_RPT_summary_ind_top10 <- data_RPT_summary_ind %>%
+  dplyr::filter(NIC_2 %in% ind_freq$NIC_2)
+
+# Business vs non-business group data summary
+data_RPT_summary_BG <- data_RPT_2 %>%
+  group_by(BG) %>%
+  summarise('min' = min(RPT_agg, na.rm = T),
+            'P10' = quantile(RPT_agg, 0.10, na.rm = T),
+            'Q1' = quantile(RPT_agg, 0.25, na.rm = T),
+            'med' = quantile(RPT_agg, 0.50, na.rm = T),
+            'iqr' = IQR(RPT_agg, na.rm =T),
+            'mean' = mean(RPT_agg, na.rm = T),
+            'std_dev' = sd(RPT_agg, na.rm = T),
+            'Q3' = quantile(RPT_agg, 0.75, na.rm = T),
+            'P90' = quantile(RPT_agg, 0.90, na.rm = T),
+            'P95' = quantile(RPT_agg, 0.95, na.rm = T),
+            'P99' = quantile(RPT_agg, 0.99, na.rm = T),
+            'max' = max(RPT_agg, na.rm = T),
+            'skew' = moments::skewness(RPT_agg, na.rm = T),
+            'kurt' = moments::kurtosis(RPT_agg, na.rm = T)
+  )
+
+plot_ECDF_RPT_agg_BG <- ggplot(data_RPT_2, 
+                               aes(y = RPT_agg, group = BG, color = BG)) +
+  stat_ecdf(geom = 'step', linewidth = 0.7) +
+  labs(x = 'Quantiles', y = 'Empirical cumulative distribution function')
+
+##############################################################################
+########### Plots with time ##################################################
+##############################################################################
 
 # Aggregate RPT histogram
 plot_hist_RPT_agg <- ggplot(data_RPT_2, aes(x = RPT_agg)) +
@@ -113,7 +143,7 @@ plot_med_RPT_agg <- ggplot(data = data_RPT_summary_TS,
   geom_vline(xintercept = 2014, linetype = 'dashed') +
   labs(x = '', y = "Median firm's aggregate RPT level")
 
-# Median + P10 + P90 firms's agg RPT with time
+# Median + Percentile XYZ firms's agg RPT with time
 plot_med_RPT_agg_P90P10 <- ggplot(data = data_RPT_summary_TS, 
                            mapping = aes(x = year)) +
   geom_point(aes(y = P10)) +
@@ -148,7 +178,15 @@ plot_med_RPT_agg_P99P95P90 <- ggplot(data = data_RPT_summary_TS,
 
 
 # Median business group's RPT
-# plot_med_RPT_agg_BG <- ggplot(filter(data_RPT_2, BG == 1) %>% group_by(year))
+#With outliers
+plot_RPT_agg_BG_full <- ggplot(data_RPT_2, aes(x = BG, y = RPT_agg, group = BG)) +
+  geom_boxplot() +
+  labs(x = '', y = 'Aggregate RPT usse: Business group vs non-BG')
+# Without outliers
+plot_RPT_agg_BG_full_no_out <- ggplot(data_RPT_2, aes(x = BG, y = RPT_agg, group = BG)) +
+  geom_boxplot(outlier.shape = NA) +
+  ylim(0, 0.75) +
+  labs(x = '', y = 'Aggregate RPT usse: Business group vs non-BG')
 
 #########################################
 ### Aggregate RPT boxplots with time ####
@@ -164,7 +202,7 @@ plot_box_RPT_agg_out <- ggplot(data = data_RPT_2,
 # Without outliers
 plot_box_RPT_agg_no_out <- ggplot(data = data_RPT_2, 
                                   mapping = aes(x = year, y = RPT_agg, group = year)) +
-  ylim(0, 1) +
+  ylim(0, 0.4) +
   geom_boxplot(outlier.shape = NA) +
   scale_x_continuous(breaks = year_breaks) +
   labs(x = '', y = 'Aggregate RPT distribution')
@@ -205,5 +243,5 @@ plot_box_RPT_agg_industry <- ggplot(data_RPT_2 %>% filter(NIC_2 %in% ind_freq$NI
 # Without outliers
 plot_box_RPT_agg_industry_out_no <- ggplot(data_RPT_2 %>% filter(NIC_2 %in% ind_freq$NIC_2), 
                                     aes(x = NIC_2, y = RPT_agg)) +
-  ylim(0, 1) +
+  ylim(0, 0.5) +
   geom_boxplot(outlier.shape = NA)
