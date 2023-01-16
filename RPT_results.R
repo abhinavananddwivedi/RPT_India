@@ -245,3 +245,14 @@ plot_box_RPT_agg_industry_out_no <- ggplot(data_RPT_2 %>% filter(NIC_2 %in% ind_
                                     aes(x = NIC_2, y = RPT_agg)) +
   ylim(0, 0.5) +
   geom_boxplot(outlier.shape = NA)
+
+
+
+#####################################################################
+########## Write out relevant .csv files ############################
+#####################################################################
+
+# write_csv(data_RPT_summary_BG, 'Agg_RPT_usage_BG.csv')
+# write_csv(data_RPT_summary_ind_top10, 'Agg_RPT_usage_industry.csv')
+# write_csv(data_RPT_summary_TS, 'Agg_RPT_usage_yearly.csv')
+# 
