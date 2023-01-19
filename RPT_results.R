@@ -28,93 +28,6 @@ data_RPT_2 <- data_RPT %>%
 data_RPT_2 <- data_RPT_2 %>%
   dplyr::mutate('RPT_agg' = RPT_SALES + RPT_LOANS)
 
-##################################################################
-############ Function declarations ###############################
-##################################################################
-
-### Aggregate RPT summary stats
-func_summ_rpt_agg <- function(df)
-{
-  temp_vec <- df$RPT_agg
-  summ_rpt_agg <- c('min' = min(temp_vec, na.rm = T),
-                    'mean' = mean(temp_vec, na.rm = T),
-                    'median' = median(temp_vec, na.rm = T),
-                    'std' = sd(temp_vec, na.rm = T),
-                    'iqr' = IQR(temp_vec, na.rm = T),
-                    'max' = max(temp_vec, na.rm = T),
-                    quantile(temp_vec, c(0.1,0.25,0.75,0.90,0.95,0.99),
-                             na.rm = T))
-  
-  return(summ_rpt_agg)
-}
-
-### RPT Sales summary stats
-func_summ_rpt_sales <- function(df)
-{
-  temp_vec <- df$RPT_SALES
-  summ_rpt_sales <- c('min' = min(temp_vec, na.rm = T),
-                    'mean' = mean(temp_vec, na.rm = T),
-                    'median' = median(temp_vec, na.rm = T),
-                    'std' = sd(temp_vec, na.rm = T),
-                    'iqr' = IQR(temp_vec, na.rm = T),
-                    'max' = max(temp_vec, na.rm = T),
-                    quantile(temp_vec, c(0.1,0.25,0.75,0.90,0.95,0.99),
-                             na.rm = T))
-  
-  return(summ_rpt_sales)
-}
-
-### RPT loans summary stats
-func_summ_rpt_loans <- function(df)
-{
-  temp_vec <- df$RPT_LOANS
-  summ_rpt_sales <- c('min' = min(temp_vec, na.rm = T),
-                      'mean' = mean(temp_vec, na.rm = T),
-                      'median' = median(temp_vec, na.rm = T),
-                      'std' = sd(temp_vec, na.rm = T),
-                      'iqr' = IQR(temp_vec, na.rm = T),
-                      'max' = max(temp_vec, na.rm = T),
-                      quantile(temp_vec, c(0.1,0.25,0.75,0.90,0.95,0.99),
-                               na.rm = T))
-  
-  return(summ_rpt_sales)
-}
-
-
-### Nesting data based on characteristics ###
-
-# Years based nesting
-data_RPT_nest_TS <- data_RPT_2 %>%
-  tidyr::nest(data = -year)
-
-### Summary stats
-data_RPT_nest_TS <- data_RPT_nest_TS %>%
-  dplyr::mutate(summ_rpt_agg_ts = purrr::map(data, func_summ_rpt_agg),
-                summ_rpt_sales_ts = purrr::map(data, func_summ_rpt_sales),
-                summ_rpt_loans_ts = purrr::map(data, func_summ_rpt_loans))
- 
-# Extract summary stats by year
-
-
-# Industry based nesting
-data_RPT_nest_ind <- data_RPT_2 %>%
-  tidyr::nest(data = -NIC_2)
-
-# BG based nesting
-data_RPT_nest_BG <- data_RPT_2 %>%
-  tidyr::nest(data = -BG)
-
-#################################################
-######## Descriptive stats computation ##########
-#################################################
-
-func_summ_TS_ind_BG <- function(tib)
-{
-  tib_TS <- median(tib, na.rm = T)
-  
-  return(tib_2)
-}
-
 ### Based on years
 
 # Time series data summary
@@ -181,8 +94,13 @@ ind_freq <- data_RPT_2 %>%
   dplyr::arrange(desc(n)) %>%
   dplyr::filter(n >= 400)
 
+# The top 10
 data_RPT_summary_ind_top10 <- data_RPT_summary_ind %>%
   dplyr::filter(NIC_2 %in% ind_freq$NIC_2)
+
+# Aggregate RPT histogram
+plot_hist_RPT_agg <- ggplot(data_RPT_2, aes(x = RPT_agg)) +
+  geom_histogram(bins = 50)
 
 # Business vs non-business group data summary
 data_RPT_summary_BG <- data_RPT_2 %>%
@@ -338,9 +256,7 @@ data_rpt_loans_summary_BG <- data_RPT_2 %>%
 ########### Plots with time ##################################################
 ##############################################################################
 
-# Aggregate RPT histogram
-plot_hist_RPT_agg <- ggplot(data_RPT_2, aes(x = RPT_agg)) +
-  geom_histogram(bins = 50)
+
 
 # Power laws?
 # plot_RPT_agg_power <- plot_hist_RPT_agg +
@@ -354,7 +270,7 @@ plot_hist_RPT_agg <- ggplot(data_RPT_2, aes(x = RPT_agg)) +
 # Median firm's RPT level with time
 year_breaks <- 2010:2020
 
-# Median firm's aggregate RPT across time
+# Median firm's aggregate RPT over time
 plot_med_RPT_agg <- ggplot(data = data_RPT_summary_TS, 
                            mapping = aes(x = year, y = med)) +
   geom_point() +
@@ -397,7 +313,7 @@ plot_med_RPT_agg_P99P95P90 <- ggplot(data = data_RPT_summary_TS,
   labs(x = '', y = "Comparative aggregate RPT levels")
 
 
-# Median business group's RPT
+# Median business group's RPT agg
 #With outliers
 plot_RPT_agg_BG_full <- ggplot(data_RPT_2, aes(x = BG, y = RPT_agg, group = BG)) +
   geom_boxplot() +
@@ -464,24 +380,77 @@ plot_box_RPT_agg_industry_out_no <- ggplot(data_RPT_2 %>% filter(NIC_2 %in% ind_
 ####### Plots with RPT types ########################################
 #####################################################################
 
-plot_med_rpt_loans_sales_agg <- ggplot(data = data_RPT_summary_TS, 
-                                       mapping = aes(x = year, y = med)) +
+### Median firm's aggregate and type-wise RPTs
+data_plot_ts_rpt_full <- data_RPT_summary_TS %>%
+  select(year, med) %>%
+  rename('med_agg' = med) %>%
+  left_join(., data_rpt_sales_summary_TS, by = 'year') %>%
+  select(year, med_agg, med) %>%
+  rename('med_s' = med) %>%
+  left_join(., data_rpt_loans_summary_TS, by = 'year') %>%
+  select(year, med_agg, med_s, med) %>%
+  rename('med_l' = med)
+
+# Making data into panel format
+data_plot_rpt_full_long <- data_plot_ts_rpt_full %>%
+  tidyr::pivot_longer(., -year, names_to = 'Type', values_to = 'Medians')
+
+# Plotting median firm's rpt by type: agg, sales, loans
+plot_med_rpt_type_ts <- ggplot(data_plot_rpt_full_long, 
+                               aes(year, Medians, 
+                                   shape = Type, 
+                                   linetype = Type)) +
   geom_point() +
-  geom_line(linetype = 'solid') +
-  geom_line(data = data_rpt_loans_summary_TS,
-            mapping = aes(x = year, y = med),
-            linetype = 'longdash') +
-  geom_point(data = data_rpt_loans_summary_TS,
-             mapping = aes(x = year, y = med)) +
-  # geom_point() +
-  # geom_line(data_rpt_sales_summary_TS, 
-  #           aes(x = year, y = med), 
-  #           linetype = 'dotdash') +
+  geom_line() +
   scale_x_continuous(breaks = year_breaks) +
-  geom_vline(xintercept = 2014, linetype = 'dashed') +
-  labs(x = '', y = "Median firm's RPT level")
+  labs(x = '', y = "Median firm's RPT by type") +
+  geom_vline(xintercept = 2014, linetype = 'dashed')
 
+### Top RPT quantiles by type ###
 
+### Loans
+data_plot_ts_rpt_type_quantile <- data_RPT_summary_TS %>%
+  select(year, P90, P95, P99) %>%
+  rename_at(vars(-year), funs(paste0(., '_agg'))) %>%
+  left_join(., data_rpt_loans_summary_TS, by = 'year') %>%
+  select(year, starts_with('P9')) %>%
+  rename('P90_l' = P90,
+         'P95_l' = P95,
+         'P99_l' = P99) %>%
+  left_join(., data_rpt_sales_summary_TS, by = 'year') %>%
+  select(year, starts_with('P9')) %>%
+  rename('P90_s' = P90,
+         'P95_s' = P95,
+         'P99_s' = P99)
+
+data_plot_rpt_loans_quantile_long <- data_plot_ts_rpt_type_quantile %>%
+  select(year, P90_l, P95_l, P99_l) %>%
+  pivot_longer(., -year, names_to = 'Quantiles', values_to = 'RPT_loans')
+
+plot_P90s_rpt_loans_ts <- ggplot(data_plot_rpt_loans_quantile_long, 
+                                 aes(x = year, y = RPT_loans, 
+                                     shape = Quantiles, 
+                                     linetype = Quantiles)) +
+  geom_point() +
+  geom_line() +
+  scale_x_continuous(breaks = year_breaks) +
+  labs(x = '', y = 'Top quantiles RPT loans') +
+  geom_vline(xintercept = 2014, linetype = 'dashed')
+
+### Sales
+data_plot_rpt_sales_quantile_long <- data_plot_ts_rpt_type_quantile %>%
+  select(year, P90_s, P95_s, P99_s) %>%
+  pivot_longer(., -year, names_to = 'Quantiles', values_to = 'RPT_sales')
+
+plot_P90s_rpt_sales_ts <- ggplot(data_plot_rpt_sales_quantile_long, 
+                                 aes(x = year, y = RPT_sales, 
+                                     shape = Quantiles, 
+                                     linetype = Quantiles)) +
+  geom_point() +
+  geom_line() +
+  scale_x_continuous(breaks = year_breaks) +
+  labs(x = '', y = 'Top quantiles RPT sales') +
+  geom_vline(xintercept = 2014, linetype = 'dashed')
 
 #####################################################################
 ########## Write out relevant .csv files ############################
